@@ -37,6 +37,7 @@ public class SetupActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Eink.apply(this);
         setContentView(R.layout.activity_setup);
         SystemBars.applyInsets(findViewById(R.id.root));
 
@@ -56,6 +57,12 @@ public class SetupActivity extends Activity {
             }
             return false;
         });
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) Eink.enterImmersive(this);
     }
 
     @Override
@@ -89,7 +96,8 @@ public class SetupActivity extends Activity {
     private void setBusy(boolean busy) {
         connectButton.setEnabled(!busy);
         urlInput.setEnabled(!busy);
-        progress.setVisibility(busy ? View.VISIBLE : View.GONE);
+        // 墨水屏不显示旋转的加载动画，状态文字已说明正在检查
+        progress.setVisibility(busy && !BuildConfig.EINK ? View.VISIBLE : View.GONE);
         status.setText(busy ? getString(R.string.setup_checking) : "");
     }
 
@@ -125,12 +133,14 @@ public class SetupActivity extends Activity {
 
     /** 自签名证书、健康检查被代理拦截等情况下，允许用户确认后仍使用该地址 */
     private void confirmUnverified(String url, String error) {
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.setup_check_failed_title)
                 .setMessage(getString(R.string.setup_check_failed_message, error))
-                .setPositiveButton(R.string.setup_use_anyway, (dialog, which) -> save(url))
+                .setPositiveButton(R.string.setup_use_anyway, (d, which) -> save(url))
                 .setNegativeButton(R.string.cancel, null)
-                .show();
+                .create();
+        Eink.disableDialogAnimation(dialog);
+        dialog.show();
     }
 
     private void save(String url) {
@@ -138,6 +148,7 @@ public class SetupActivity extends Activity {
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
+        Eink.overrideTransition(this);
         finish();
     }
 }

@@ -148,6 +148,33 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/*
+ * 墨水屏（E-ink）：整屏刷新成本高，动画、过渡和平滑滚动都会留下残影并增加耗电。
+ * html 上的 eink 类由首屏脚本按 User-Agent 添加；用 !important 覆盖组件自带的动画。
+ */
+html.eink {
+  color-scheme: light;
+  scroll-behavior: auto;
+  /* 纯白背景在墨水屏上不抖动，比接近白色的冷灰更干净 */
+  --background: #ffffff;
+  --card: #ffffff;
+}
+
+html.eink *,
+html.eink *::before,
+html.eink *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 去掉背景模糊后，半透明导航栏改为不透明，避免文字叠在页面内容上 */
+html.eink .backdrop-blur-md {
+  background-color: var(--card) !important;
+}
+
 /* Print Styles for PDF Export */
 @media print {
   @page {

@@ -6,7 +6,9 @@ import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
@@ -95,6 +97,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Eink.apply(this);
         serverUrl = BuildConfig.STANDALONE ? LocalServer.URL : ServerConfig.get(this);
         if (serverUrl == null) {
             openSetup();
@@ -111,6 +114,8 @@ public class MainActivity extends Activity {
         errorMessage = findViewById(R.id.error_message);
         startingView = findViewById(R.id.starting_view);
         startingMessage = findViewById(R.id.starting_message);
+        // 墨水屏不显示旋转的加载动画，只保留「正在启动」文字
+        if (BuildConfig.EINK) findViewById(R.id.starting_progress).setVisibility(View.GONE);
         bridgeScript = readAsset("bridge.js");
 
         // 系统「另存为」对话框期间 Activity 可能被回收；从固定的临时文件恢复待保存内容
@@ -187,6 +192,13 @@ public class MainActivity extends Activity {
         // 网页可据此识别安卓客户端，显示「更换服务器」等入口
         settings.setUserAgentString(settings.getUserAgentString()
                 + " WrongNotebookAndroid/" + BuildConfig.VERSION_NAME + " (" + BuildConfig.DEVICE_TYPE + ")");
+        if (BuildConfig.EINK) {
+            // 墨水屏：去掉滚动回弹的辉光和持续淡出的滚动条，减少无效重绘
+            webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            webView.setVerticalScrollBarEnabled(false);
+            webView.setHorizontalScrollBarEnabled(false);
+            webView.setBackgroundColor(Color.WHITE);
+        }
 
         CookieManager.getInstance().setAcceptCookie(true);
         webView.addJavascriptInterface(new Bridge(), BRIDGE_NAME);
@@ -222,6 +234,13 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        // 键盘、系统对话框等会临时带出系统栏，重新获得焦点后再次隐藏
+        if (hasFocus) Eink.enterImmersive(this);
+    }
+
+    @Override
     protected void onPause() {
         // 及时落盘登录 Cookie，避免被系统回收后需要重新登录
         CookieManager.getInstance().flush();
@@ -249,6 +268,7 @@ public class MainActivity extends Activity {
 
     private void openSetup() {
         startActivity(new Intent(this, SetupActivity.class));
+        Eink.overrideTransition(this);
     }
 
     private void openExternal(Uri uri) {
@@ -454,6 +474,15 @@ public class MainActivity extends Activity {
 
     // ---------- 选择图片 / 拍照上传 ----------
 
+    /**
+     * 设备是否声明了相机硬件。这里只查系统特性，不用 resolveActivity：Android 11 起受包可见性限制，
+     * 未在清单中声明 queries 时查询拍照应用会得到空结果，导致有相机的设备也被误判。
+     * 没有相机应用但有硬件时，打开相机会失败并提示改用相册或文件。
+     */
+    private boolean hasCameraFeature() {
+        return getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY);
+    }
+
     private Intent createCameraIntent() {
         File dir = new File(getCacheDir(), "camera");
         if (!dir.isDirectory() && !dir.mkdirs()) return null;
@@ -518,6 +547,10 @@ public class MainActivity extends Activity {
         FileChooserMode.Mode mode = FileChooserMode.resolve(acceptTypes, params.isCaptureEnabled());
 
         if (mode == FileChooserMode.Mode.CAMERA) {
+            if (!hasCameraFeature()) {
+                cancelChooser(R.string.camera_unavailable);
+                return true;
+            }
             Intent camera = createCameraIntent();
             if (camera == null) {
                 cancelChooser(R.string.camera_unavailable);
@@ -645,25 +678,29 @@ public class MainActivity extends Activity {
                 return;
             }
             // 局域网部署常用自签名证书，由用户确认后在本次运行中信任
-            new AlertDialog.Builder(MainActivity.this)
+            AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
                     .setTitle(R.string.ssl_title)
                     .setMessage(getString(R.string.ssl_message, url.getHost()))
                     .setCancelable(false)
-                    .setPositiveButton(R.string.ssl_continue, (dialog, which) -> {
+                    .setPositiveButton(R.string.ssl_continue, (d, which) -> {
                         trustedCertificates.add(key);
                         handler.proceed();
                     })
-                    .setNegativeButton(R.string.cancel, (dialog, which) -> {
+                    .setNegativeButton(R.string.cancel, (d, which) -> {
                         handler.cancel();
                         showError(getString(R.string.ssl_title));
                     })
-                    .show();
+                    .create();
+            Eink.disableDialogAnimation(dialog);
+            dialog.show();
         }
     }
 
     private final class ChromeClient extends WebChromeClient {
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
+            // 墨水屏不显示进度条：每次进度变化都会触发一次局部刷新
+            if (BuildConfig.EINK) return;
             progress.setProgress(newProgress);
             progress.setVisibility(newProgress < 100 ? View.VISIBLE : View.GONE);
         }
@@ -727,6 +764,18 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String getDeviceType() {
             return BuildConfig.DEVICE_TYPE;
+        }
+
+        /** 设备是否有可用相机；网页在没有摄像头时隐藏所有拍照入口 */
+        @JavascriptInterface
+        public boolean hasCamera() {
+            return hasCameraFeature();
+        }
+
+        /** 是否墨水屏版；网页据此关闭动画并强制浅色主题 */
+        @JavascriptInterface
+        public boolean isEink() {
+            return BuildConfig.EINK;
         }
 
         @JavascriptInterface

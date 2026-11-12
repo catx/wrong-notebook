@@ -35,6 +35,12 @@ let root: Root;
 let host: HTMLDivElement;
 
 const OPTIONS: ThemePreference[] = ['system', 'light', 'dark'];
+const EINK_UA = 'Mozilla/5.0 (Linux; Android 8.1; Moaan-SR9) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/111.0.0.0 Safari/537.36 WrongNotebookAndroid/2026.11.12 (eink)';
+const originalUserAgent = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
+
+function setUserAgent(value: string) {
+    Object.defineProperty(navigator, 'userAgent', { configurable: true, value });
+}
 
 /** 显示当前主题，并为每种偏好提供一个切换按钮 */
 function Probe() {
@@ -76,6 +82,7 @@ beforeEach(() => {
     mocks.get.mockResolvedValue({});
     mocks.patch.mockResolvedValue({});
     document.documentElement.classList.remove('dark');
+    document.documentElement.classList.remove('eink');
     host = document.createElement('div');
     document.body.appendChild(host);
     root = createRoot(host);
@@ -85,6 +92,9 @@ afterEach(() => {
     act(() => root.unmount());
     host.remove();
     localStorage.clear();
+    document.documentElement.classList.remove('eink');
+    if (originalUserAgent) Object.defineProperty(navigator, 'userAgent', originalUserAgent);
+    else Reflect.deleteProperty(navigator, "userAgent");
     vi.unstubAllGlobals();
 });
 
@@ -130,6 +140,16 @@ describe('主题工具函数', () => {
         expect(htmlIsDark()).toBe(true);
         expect(document.documentElement.style.colorScheme).toBe('dark');
     });
+
+    it('墨水屏首屏强制浅色并添加 eink 类，忽略缓存的深色偏好', () => {
+        localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+        systemDark = true;
+        setUserAgent(EINK_UA);
+        new Function(THEME_INIT_SCRIPT)();
+        expect(htmlIsDark()).toBe(false);
+        expect(document.documentElement.classList.contains('eink')).toBe(true);
+        expect(document.documentElement.style.colorScheme).toBe('light');
+    });
 });
 
 describe('ThemeProvider', () => {
@@ -141,6 +161,16 @@ describe('ThemeProvider', () => {
         act(() => setSystemDark(true));
         expect(probe().dataset.theme).toBe('dark');
         expect(htmlIsDark()).toBe(true);
+    });
+
+    it('墨水屏忽略深色偏好，始终使用浅色', async () => {
+        localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+        systemDark = true;
+        setUserAgent(EINK_UA);
+        await render();
+        expect(probe().dataset.preference).toBe('dark');
+        expect(probe().dataset.theme).toBe('light');
+        expect(htmlIsDark()).toBe(false);
     });
 
     it('手动切换后写入本地缓存并覆盖系统设置；未登录时不请求接口', async () => {
@@ -202,5 +232,6 @@ describe('ThemeProvider', () => {
         expect(css).toContain(':root,\n.exam-sheet');
         expect(css).toMatch(/@media screen\s*\{\s*\.dark\s*\{/);
         expect(css).toMatch(/@media print\s*\{[\s\S]*?:root,\s*\.dark\s*\{[\s\S]*?color-scheme:\s*light\s*!important/);
+        expect(css).toMatch(/html\.eink \*[\s\S]*?animation:\s*none\s*!important[\s\S]*?transition:\s*none\s*!important/);
     });
 });

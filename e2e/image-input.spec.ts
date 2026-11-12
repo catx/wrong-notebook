@@ -250,17 +250,17 @@ test.describe('手机拍照、相册与文件入口', () => {
         await expect(page.getByRole('heading', { name: /裁剪|Crop/ })).toBeVisible({ timeout: 30000 });
     });
 
-    test('[E2E-I07] 设备没有摄像头时提示改用相册或文件', async ({ page, scenario }) => {
+    test('[E2E-I07] 设备没有摄像头时自动隐藏拍照入口，只保留相册和文件', async ({ page, scenario }) => {
         await page.addInitScript(() => {
             Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { enumerateDevices: async () => [] } });
         });
         await scenario.login(page);
         await page.goto('/');
-        let opened = false;
-        page.on('filechooser', () => { opened = true; });
-        await page.getByTestId('image-sources').getByRole('button', { name: '拍照' }).click();
-        await expect(page.getByText('未检测到可用的相机', { exact: false })).toBeVisible();
-        expect(opened).toBe(false);
+        const sources = page.getByTestId('image-sources');
+        await expect(sources.getByRole('button', { name: '拍照' })).toHaveCount(0);
+        await expect(page.getByTestId('camera-input')).toHaveCount(0);
+        await expect(sources.getByRole('button', { name: '相册' })).toBeVisible();
+        await expect(sources.getByRole('button', { name: '从文件选择' })).toBeVisible();
     });
 
     test('[E2E-I08] 安卓 App 中设备枚举为空也不拦截拍照，交给原生相机', async ({ page, scenario }) => {
@@ -281,6 +281,21 @@ test.describe('手机拍照、相册与文件入口', () => {
         await expect(page.getByText('未检测到可用的相机', { exact: false })).toHaveCount(0);
         await chooser.setFiles(fixture('orientation-6.jpg'));
         await expect(page.getByRole('heading', { name: /裁剪|Crop/ })).toBeVisible();
+    });
+
+    test('[E2E-I08b] 安卓 App 报告无摄像头时同样隐藏拍照入口', async ({ page, scenario }) => {
+        await page.addInitScript(() => {
+            Object.defineProperty(window, 'WrongNotebookAndroid', { configurable: true, value: {
+                changeServer: () => undefined, getServerUrl: () => location.origin, getDeviceType: () => 'eink',
+                hasCamera: () => false, isEink: () => true, isStandalone: () => false,
+            } });
+        });
+        await scenario.login(page);
+        await page.goto('/');
+        const sources = page.getByTestId('image-sources');
+        await expect(sources.getByRole('button', { name: '拍照' })).toHaveCount(0);
+        await expect(page.getByTestId('camera-input')).toHaveCount(0);
+        await expect(sources.getByRole('button', { name: '相册' })).toBeVisible();
     });
 
     test('[E2E-I10] 手机上裁剪框居中且不依赖 CSS translate，确认与取消按钮都在屏幕内', async ({ page, scenario }) => {

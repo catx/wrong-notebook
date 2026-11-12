@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef, useSyncExternalStore } from "react";
 import type { ChangeEvent } from "react";
 import { useDropzone } from "react-dropzone";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getAndroidAppBridge } from "@/lib/android-app";
+import type { AndroidAppBridge } from "@/lib/android-app";
 import { toast } from "@/lib/feedback";
 import { useIsClient } from "@/lib/hooks/use-is-client";
 import { frontendLogger } from "@/lib/frontend-logger";
@@ -29,27 +30,50 @@ declare global {
 }
 
 /**
- * 检测是否有摄像头：只在浏览器提供 mediaDevices 时判断（HTTP 页面和部分 WebView 不提供，此时不阻止拍照）。
- * 不请求权限，只读取设备种类。
- * 安卓 App 中拍照由原生调用系统相机应用（ACTION_IMAGE_CAPTURE），WebView 的设备枚举不代表原生相机能力，
- * 因此不据此拦截，相机不可用时由原生提示。
+ * 安卓 App 报告是否有可用相机。早期 App 没有 hasCamera 接口时返回 null（不确定，保持原来的拍照入口）。
+ * 原生接口异常时也按不确定处理，不误伤有相机的设备。
+ */
+export function bridgeCameraAvailability(bridge: AndroidAppBridge | null): boolean | null {
+    if (!bridge || typeof bridge.hasCamera !== "function") return null;
+    try {
+        return bridge.hasCamera();
+    } catch {
+        return null;
+    }
+}
+
+/** 从原生 Bridge 读取相机能力；接口不存在或出错时返回 null */
+function readBridgeCameraAvailability(): boolean | null {
+    return bridgeCameraAvailability(getAndroidAppBridge());
+}
+
+const subscribeNothing = () => () => undefined;
+
+/**
+ * 检测是否有摄像头：安卓 App 用原生接口判断（WebView 的设备枚举不代表原生相机能力）；
+ * 普通浏览器只在提供 mediaDevices 时判断（HTTP 页面和部分 WebView 不提供，此时不阻止拍照）。
+ * 不请求权限，只读取设备种类。返回 null 表示无法判断。
+ *
+ * Bridge 的结果用 useSyncExternalStore 读取：服务端渲染按 null，水合后再更新，
+ * 避免直接在水合时隐藏拍照入口造成 DOM 不一致；浏览器枚举仍在 effect 中异步更新。
  */
 export function useCameraAvailability(): boolean | null {
-    const [available, setAvailable] = useState<boolean | null>(null);
+    const bridgeCamera = useSyncExternalStore(subscribeNothing, readBridgeCameraAvailability, () => null);
+    const [browserCamera, setBrowserCamera] = useState<boolean | null>(null);
     useEffect(() => {
         if (getAndroidAppBridge()) return;
         if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) return;
         let cancelled = false;
         navigator.mediaDevices.enumerateDevices()
             .then((devices) => {
-                if (!cancelled) setAvailable(devices.some((device) => device.kind === "videoinput"));
+                if (!cancelled) setBrowserCamera(devices.some((device) => device.kind === "videoinput"));
             })
             .catch(() => undefined);
         return () => {
             cancelled = true;
         };
     }, []);
-    return available;
+    return bridgeCamera !== null ? bridgeCamera : browserCamera;
 }
 
 /**

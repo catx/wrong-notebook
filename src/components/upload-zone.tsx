@@ -41,12 +41,14 @@ export function UploadZone({ onImageSelect, isAnalyzing, source = "", onSourceCh
                 albumInput={zone.albumInput}
                 fileInput={zone.fileInput}
                 handlePicked={zone.handlePicked}
+                showCamera={zone.hasCamera !== false}
             />
             {/* 触屏设备（手机、平板）显示拍照、相册、文件三个独立入口；用 CSS 媒体查询判断，不依赖渲染时的状态 */}
             {zone.isClient && (
                 <ImageSourceButtons
                     openSource={zone.openSource}
                     isAnalyzing={zone.isAnalyzing}
+                    hasCamera={zone.hasCamera}
                 />
             )}
             <DragDropArea

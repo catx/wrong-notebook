@@ -31,7 +31,7 @@
 - **🆓 免费账号就能用**：选择「MiniMax Code OAuth」渠道，用 MiniMax Code 账号网页登录即可使用，不需要购买 API Key，应用每天自动签到领取积分（见 [MiniMax Code OAuth](#minimax-code-oauth)）；火山引擎新用户也有[免费推理额度](#火山引擎免费试用)。
 - **📚 复习闭环**：举一反三变式题自动判题、AI 评估掌握概率、艾宾浩斯间隔的今日复习、按错题组卷打印并回填结果。
 - **🗂️ 共享真题库**：新增「真题库」页，可从 [margrop/wrong-notebook-question-bank](https://github.com/margrop/wrong-notebook-question-bank) 下载小学、初中、高中多学科题库包；导入默认只进入真题库、不产生错题，也可勾选同时写入错题本。举一反三可按知识点从真题库选题（不消耗 AI 额度），也可选「真题库变式」：先选出题库题目，再由 AI 以该题为原题生成变式题。
-- **📦 多平台安装**：Docker 镜像（amd64 / arm64）、npm、Windows、macOS、Linux、飞牛OS、群晖/威联通套件、安卓手机与平板（单机版或客户端），也可添加到手机主屏幕（PWA）。
+- **📦 多平台安装**：Docker 镜像（amd64 / arm64）、npm、Windows、macOS、Linux、飞牛OS、群晖/威联通套件、安卓手机、平板与墨水屏（单机版或客户端），也可添加到手机主屏幕（PWA）。
 
 > 本仓库 fork 自 [wttwins/wrong-notebook](https://github.com/wttwins/wrong-notebook)，在其基础上增加了上述及下文列出的大部分功能。
 
@@ -56,7 +56,7 @@
 <details>
 <summary><strong>录入与偏好：拍照上传、文字录入、人工确认和可配置判重</strong></summary>
 
-首页提供拍照上传、手动输入、导入题库文件和直接录入入口，支持拖拽图片与剪贴板粘贴。手机上有「拍照」「相册」「从文件选择」三个独立入口：拍照直接打开相机，相册中找不到的照片可从文件选择。
+首页提供拍照上传、手动输入、导入题库文件和直接录入入口，支持拖拽图片与剪贴板粘贴。手机上有「拍照」「相册」「从文件选择」入口：拍照直接打开相机，确认设备没有摄像头时自动隐藏拍照入口；相册中找不到的照片可从文件选择。
 
 「导入题库文件」支持 JSON（题目交换格式 v1）、Word（.docx）、Excel（.xlsx）、CSV 与 PDF 题库文件，解析后展示摘要（题数、错误原因、警告、暂未导入字段），选择目标错题本后按批次进入导入中心，可「按原样入库」不调用 AI；一次最多导入 2000 题。导入页可下载 Excel / CSV 模板。TXT / Markdown 文件仍在「手动输入」中经「从文件导入」填入文字框。PDF 必须带文字层；扫描版 PDF 可选择页码范围（单次最多 20 页）转为图片，页面按输出上限放大（A4 约 225 DPI）后由 AI 识别分题导入，每页消耗一次 AI 分题额度；分不出题目的页面（如答案页、空白页）会自动跳过，不留下失败批次。带文字层的 PDF 默认给每道题按版面区域截图作为题目原图（可改为只截有图形的题或不保存），公式与图形不会因文字层乱码而丢失。
 
@@ -207,8 +207,8 @@
 | 飞牛OS | `WrongNotebook-FnOS-<版本>-x86.fpk`、`WrongNotebook-FnOS-<版本>-arm.fpk` |
 | 群晖 DSM | `WrongNotebook-Synology-<版本>-x86_64.spk` / `-arm64.spk`（套件中心手动安装，内置镜像的 Docker 套件，需 Container Manager） |
 | 威联通 QTS | `WrongNotebook-QNAP-<版本>-x86_64.qpkg` / `-arm64.qpkg`（App Center 手动安装，内置镜像的 Docker 套件，需 Container Station） |
-| 安卓手机 / 平板（单机版） | `WrongNotebook-Android-Phone-<版本>.apk`（竖屏）、`WrongNotebook-Android-Tablet-<版本>.apk`（横竖屏自动旋转） |
-| 安卓手机 / 平板（客户端） | `WrongNotebook-Android-Client-Phone-<版本>.apk`、`WrongNotebook-Android-Client-Tablet-<版本>.apk` |
+| 安卓手机 / 平板 / 墨水屏（单机版） | `WrongNotebook-Android-Phone-<版本>.apk`（竖屏）、`WrongNotebook-Android-Tablet-<版本>.apk`（横竖屏自动旋转）、`WrongNotebook-Android-Eink-<版本>.apk`（横向、无动画，需 arm64） |
+| 安卓手机 / 平板 / 墨水屏（客户端） | `WrongNotebook-Android-Client-Phone-<版本>.apk`、`-Client-Tablet-<版本>.apk`、`-Client-Eink-<版本>.apk` |
 
 Windows 的 [Code signing policy（代码签名政策）](doc/CODE_SIGNING.md)与[隐私说明](doc/PRIVACY.md)已公开。项目已通过 SignPath Foundation 审核，正在用测试证书接入，取得生产证书前发布的 Windows 安装包仍未签名。维护者接入步骤见 [Windows 签名配置](doc/WINDOWS_SIGNING.md)。
 
@@ -226,7 +226,7 @@ npm install -g wrong-notebook
 wrong-notebook --port 3000
 ```
 
-安卓单机版内置服务端，安装后直接使用，数据保存在本机（卸载 App 会删除数据；数据含 API Key，不参与系统备份，卸载或换机前请在设置中导出备份）；需要 Android 8.0 及以上的 64 位 ARM 设备。两个版本都由系统的 Android System WebView 显示界面，需要 WebView 111 及以上，版本过旧时页面顶部会提示升级（没有 Google Play 的手机可在手机自带的应用商店升级）。客户端版不内置服务端，首次打开时填写已部署的服务器地址（如 `http://192.168.1.10:3000`），可在「设置 → 关于」中更换服务器，需要 Android 7.0 及以上。两种 App 都支持拍照上传、导出文件和系统打印，可以同时安装。数据目录、默认账号、本地构建方法见 [INSTALL_PACKAGES.md](doc/INSTALL_PACKAGES.md)。
+安卓单机版内置服务端，安装后直接使用，数据保存在本机（卸载 App 会删除数据；数据含 API Key，不参与系统备份，卸载或换机前请在设置中导出备份）；需要 Android 8.0 及以上的 64 位 ARM 设备。两个版本都由系统的 Android System WebView 显示界面，需要 WebView 111 及以上，版本过旧时页面顶部会提示升级（没有 Google Play 的手机可在手机自带的应用商店升级）。客户端版不内置服务端，首次打开时填写已部署的服务器地址（如 `http://192.168.1.10:3000`），可在「设置 → 关于」中更换服务器，需要 Android 7.0 及以上。两种 App 都支持拍照上传、导出文件和系统打印，可以同时安装。墨水屏版固定横向、关闭全部动画并强制浅色，没有可用摄像头时自动隐藏拍照入口；墨案 inkPad X 等 32 位墨水屏设备请使用客户端版（单机版内置的 Node.js 与 Prisma 引擎只提供 arm64-v8a）。数据目录、默认账号、本地构建方法见 [INSTALL_PACKAGES.md](doc/INSTALL_PACKAGES.md)。
 
 ### 方式二：Docker 镜像部署（推荐用于服务器 / NAS）
 

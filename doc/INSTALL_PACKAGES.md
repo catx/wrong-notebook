@@ -13,7 +13,8 @@
 | 威联通 QTS | `WrongNotebook-QNAP-<版本>-x86_64.qpkg` / `-arm64.qpkg` | App Center 手动安装；内置镜像的 Docker 套件，需 Container Station |
 | 安卓手机 | `WrongNotebook-Android-Phone-<版本>.apk` | 单机版，内置服务端，无需部署服务器；锁定竖屏 |
 | 安卓平板 | `WrongNotebook-Android-Tablet-<版本>.apk` | 单机版，内置服务端，无需部署服务器；横竖屏自动旋转 |
-| 安卓手机 / 平板（客户端） | `WrongNotebook-Android-Client-Phone-<版本>.apk` / `-Client-Tablet-<版本>.apk` | 客户端版，连接已部署的服务器 |
+| 安卓墨水屏 | `WrongNotebook-Android-Eink-<版本>.apk` | 单机版，内置服务端；固定横向、无动画（需 arm64 设备） |
+| 安卓手机 / 平板 / 墨水屏（客户端） | `WrongNotebook-Android-Client-Phone-<版本>.apk` / `-Client-Tablet-<版本>.apk` / `-Client-Eink-<版本>.apk` | 客户端版，连接已部署的服务器 |
 
 校验和见 Release 中的 `SHA256SUMS.txt`。
 
@@ -81,11 +82,11 @@ wrong-notebook --port 3000 --host 0.0.0.0 --data-dir ~/.wrong-notebook
 
 套件只管理容器，不内置 Node.js；需保持 Container Station 运行。
 
-### 安卓手机 / 平板
+### 安卓手机 / 平板 / 墨水屏
 
-安卓 App（`packaging/android`）分两种，各有手机版（`Phone`，锁定竖屏）和平板版（`Tablet`，横竖屏自动旋转）。安装时需允许「安装未知来源应用」。
+安卓 App（`packaging/android`）分两种，各有手机版（`Phone`，锁定竖屏）、平板版（`Tablet`，横竖屏自动旋转）和墨水屏版（`Eink`，固定横向、无动画）。安装时需允许「安装未知来源应用」。
 
-| | 单机版 `WrongNotebook-Android-<Phone\|Tablet>-<版本>.apk` | 客户端版 `WrongNotebook-Android-Client-<Phone\|Tablet>-<版本>.apk` |
+| | 单机版 `WrongNotebook-Android-<Phone\|Tablet\|Eink>-<版本>.apk` | 客户端版 `WrongNotebook-Android-Client-<Phone\|Tablet\|Eink>-<版本>.apk` |
 | --- | --- | --- |
 | 服务端 | 内置，在手机上运行 | 需先用 Docker 或其他安装包部署 |
 | 数据 | 保存在本机，卸载 App 时删除 | 保存在服务器 |
@@ -94,7 +95,17 @@ wrong-notebook --port 3000 --host 0.0.0.0 --data-dir ~/.wrong-notebook
 | 系统 WebView | Android System WebView 111 及以上，过旧时页面顶部提示升级 | 同左 |
 | 包名 | `com.margrop.wrongnotebook.standalone` | `com.margrop.wrongnotebook` |
 
-两种 App 包名不同，可以同时安装；同一种的手机版和平板版包名相同，可以互相覆盖安装。
+两种 App 包名不同，可以同时安装；同一种的手机版、平板版和墨水屏版包名相同，可以互相覆盖安装。
+
+#### 墨水屏版
+
+墨水屏版针对电子书阅读器（如墨案 inkPad X）做了省电和显示适配：
+
+- 固定横向（允许旋转 180°），隐藏状态栏和导航栏；关闭 Activity、对话框和网页界面动画、过渡及平滑滚动，不显示加载转圈，减少整屏刷新和残影。
+- 网页固定使用浅色主题，不显示主题切换；去掉背景模糊和半透明导航栏，降低 GPU 合成负担。
+- 没有可用摄像头时自动隐藏「拍照」入口和带 `capture` 的隐藏输入，只保留「相册」和「从文件选择」；网页直接调用相机时原生侧也会再次检查并提示。
+- 单机版内置的 Node.js 与 Prisma 引擎目前只编译了 arm64-v8a，**32 位墨水屏设备（如墨案 inkPad X）请安装客户端版**连接已部署的服务器；64 位墨水屏设备可以安装单机版。
+- Android 8.1 的系统 WebView 可能停留在出厂版本，需升级到 111 及以上（见下方「系统 WebView」）。
 
 #### 单机版
 
@@ -119,12 +130,12 @@ App 切到后台后系统可能结束服务端进程，回到前台时会自动�
 
 两种 App 都补齐了 WebView 默认不具备的能力：
 
-- 网页的「拍照」「相册」「从文件选择」分别打开系统相机、照片选择器（Android 13 起为系统照片选择器）和文件选择器；拍照调用系统相机应用，App 不申请相机权限，相机不可用时提示改用相册或文件。「从文件选择」不限类型，图片类入口额外列出 HEIC/HEIF 类型，便于选到被系统标成未知类型的照片。
+- 网页的「拍照」「相册」「从文件选择」分别打开系统相机、照片选择器（Android 13 起为系统照片选择器）和文件选择器；拍照调用系统相机应用，App 不申请相机权限。设备没有可用相机时网页自动隐藏拍照入口（只留相册和文件），原生侧打开相机前也会再次检查并提示。「从文件选择」不限类型，图片类入口额外列出 HEIC/HEIF 类型，便于选到被系统标成未知类型的照片。
 - 导出备份、下载试卷等文件通过系统「另存为」保存；保存完成后提示「已保存到 <文件名>」，取消时不误报导出成功。导出文件可能很大（含题目原图、云端语音），网页分块写入 App 目录的临时文件后再复制到用户选择的位置，保存对话框期间 App 被系统回收也不会丢失内容。
 - 打印预览中的「打印」调用系统打印，可另存为 PDF。
 - 错题本以外的链接（项目主页、AI 服务商控制台等）用系统浏览器打开。
 
-网页可以通过 User-Agent 中的 `WrongNotebookAndroid/<版本> (phone|tablet)` 识别 App，App 向网页提供的接口见 `src/lib/android-app.ts`。
+网页可以通过 User-Agent 中的 `WrongNotebookAndroid/<版本> (phone|tablet|eink)` 识别 App，App 向网页提供的接口见 `src/lib/android-app.ts`。
 
 ## 本地构建
 
@@ -140,7 +151,7 @@ node scripts/package/build.mjs synology                # 群晖 SPK（noarch，�
 node scripts/package/build.mjs synology --arch x86_64 --image image.tar.gz  # 内置镜像的群晖 SPK，qnap 同
 node scripts/package/build.mjs qnap                    # 威联通 QPKG，需要 PATH 中有 QDK qbuild
 bash scripts/package/build-android-prisma-engines.sh dist/android-prisma-engines  # 安卓单机版需要的 Prisma 引擎
-node scripts/package/build.mjs android                # 单机版和客户端版 APK，可加 --mode standalone|client、--flavor phone|tablet
+node scripts/package/build.mjs android                # 单机版和客户端版 APK，可加 --mode standalone|client、--flavor phone|tablet|eink
 ```
 
 群晖 SPK 和威联通 QPKG 是 Docker 套件，不打包 Node.js 或 Prisma 引擎；构建时只生成 compose 项目（群晖）或容器控制脚本（威联通）、`INFO`/`qpkg.cfg` 和图标。发版时 Packages 工作流等同一标签的镜像推送到 ghcr.io 后，用 skopeo 按架构导出为 `docker save` 格式的归档（`--image`，gzip 压缩，镜像名须为 `ghcr.io/margrop/wrong-notebook:<版本>`），内置进套件并按 `--arch x86_64` / `arm64` 分别出包（每个约 120 MB）：群晖经 `docker-project` 的 `preload-image` 加载，威联通把归档放进 QDK 的架构目录，启动时 `docker load`。不传 `--image` 时生成安装时在线拉取镜像的 noarch 套件，用于本地调试。`qnap` 需要 QDK 2.5.3：`/usr/share/QDK/bin` 加入 PATH，`qbuild` 生成自解压 `.qpkg`。
@@ -191,7 +202,7 @@ npm 使用 [Trusted Publishing](https://docs.npmjs.com/trusted-publishers)（OID
 | `packaging/npm/` | npm 命令行入口与 README |
 | `packaging/desktop/` | Electron 桌面壳与 electron-builder 配置 |
 | `packaging/fnos/` | 飞牛OS manifest、生命周期脚本、安装向导和图标 |
-| `packaging/android/` | 安卓 App Gradle 工程（单机版 / 客户端版 × 手机版 / 平板版） |
+| `packaging/android/` | 安卓 App Gradle 工程（单机版 / 客户端版 × 手机版 / 平板版 / 墨水屏版） |
 | `scripts/package/android-runtime.mjs` | 组装安卓单机版内置的 Node.js、Prisma 引擎和服务端 |
 | `scripts/package/build-android-prisma-engines.sh` | 交叉编译安卓 Prisma 引擎 |
 

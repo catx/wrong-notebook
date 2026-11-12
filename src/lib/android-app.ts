@@ -7,8 +7,12 @@ export interface AndroidAppBridge {
     changeServer(): void;
     /** 当前连接的服务器地址 */
     getServerUrl(): string;
-    /** 安装包类型：phone 或 tablet */
+    /** 安装包类型：phone、tablet 或 eink */
     getDeviceType(): string;
+    /** 设备是否有可用相机；早期 App 没有此方法，此时按不确定处理 */
+    hasCamera?(): boolean;
+    /** 是否为墨水屏版 App；早期 App 没有此方法 */
+    isEink?(): boolean;
     /** 是否为内置服务端的单机版；早期客户端版没有此方法 */
     isStandalone?(): boolean;
 }

@@ -34,6 +34,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionNumbering } from "@/contexts/QuestionNumberingContext";
 import { useTimeZone } from "@/contexts/TimeZoneContext";
 import { apiClient } from "@/lib/api-client";
+import { einkScrollBehavior } from "@/lib/eink";
 import { validateAiConfig } from "@/lib/ai-config-validation";
 import { DEFAULT_TIME_ZONE } from "@/lib/date-time";
 import { DEFAULT_QUESTION_NUMBERING, isQuestionNumbering } from "@/lib/seq-no/seq-no-format";
@@ -107,7 +108,7 @@ export function SettingsDialog() {
             toast.success(t.settings?.messages?.saved || "Settings saved");
             trackEvent("settings_changed", { section });
             // 保存成功后滚动到顶部，方便关闭对话框
-            dialogContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            dialogContentRef.current?.scrollTo({ top: 0, behavior: einkScrollBehavior() });
         } catch (error) {
             frontendLogger.error('[SettingsDialog]', 'Failed to save settings', { error });
             toast.error(t.settings?.messages?.saveFailed || "Failed to save");

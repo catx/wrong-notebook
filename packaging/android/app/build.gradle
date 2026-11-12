@@ -60,11 +60,21 @@ android {
             dimension 'device'
             manifestPlaceholders += [screenOrientation: 'portrait']
             buildConfigField 'String', 'DEVICE_TYPE', '"phone"'
+            buildConfigField 'boolean', 'EINK', 'false'
         }
         tablet {
             dimension 'device'
             manifestPlaceholders += [screenOrientation: 'fullUser']
             buildConfigField 'String', 'DEVICE_TYPE', '"tablet"'
+            buildConfigField 'boolean', 'EINK', 'false'
+        }
+        // 墨水屏阅读器：屏幕通常为 4:3 横屏（如 1600×1200），固定横向并允许 180° 翻转；
+        // 界面由网页的墨水屏模式关闭动画、强制浅色，原生侧关闭窗口动画并隐藏系统栏
+        eink {
+            dimension 'device'
+            manifestPlaceholders += [screenOrientation: 'sensorLandscape']
+            buildConfigField 'String', 'DEVICE_TYPE', '"eink"'
+            buildConfigField 'boolean', 'EINK', 'true'
         }
     }
 

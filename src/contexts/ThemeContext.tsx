@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExte
 import type { ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { apiClient } from "@/lib/api-client";
+import { useEinkDevice } from "@/lib/hooks/use-eink";
 import { getErrorMessage } from "@/lib/error-message";
 import { frontendLogger } from "@/lib/frontend-logger";
 import { DEFAULT_THEME_PREFERENCE, isThemePreference, resolveTheme, THEME_STORAGE_KEY } from "@/lib/theme";
@@ -71,7 +72,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // 服务端渲染与水合阶段按默认值，之后读取本地缓存；首屏的 dark 类已由 <head> 中的脚本设置
     const preference = useSyncExternalStore(subscribePreference, readPreference, () => DEFAULT_THEME_PREFERENCE);
     const systemDark = useSyncExternalStore(subscribeSystemDark, readSystemDark, () => false);
-    const theme = resolveTheme(preference, systemDark);
+    // 墨水屏不提供深色：整屏反色会明显增加刷新和残影
+    const eink = useEinkDevice();
+    const theme = eink ? "light" : resolveTheme(preference, systemDark);
 
     useEffect(() => {
         const root = document.documentElement;

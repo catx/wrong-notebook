@@ -236,8 +236,8 @@ Dockerfile 在镜像内执行 Vitest、脚本语法检查和生产构建，并�
 | macOS | `WrongNotebook-Mac-<版本>-arm64.dmg`（Apple 芯片）或 `-x64.dmg`（Intel） | `~/Library/Application Support/WrongNotebook/data` |
 | Linux | `WrongNotebook-Linux-<版本>-<架构>.AppImage` 或 `.deb` | `~/.config/WrongNotebook/data` |
 | 飞牛OS | 先在应用中心安装 Node.js v24，再手动安装 `WrongNotebook-FnOS-<版本>-x86.fpk` 或 `-arm.fpk`，在安装向导中设置管理员邮箱和密码 | 应用数据目录 `@appdata/wrongnotebook` |
-| 安卓手机 / 平板（单机版） | 安装 `WrongNotebook-Android-Phone-<版本>.apk` 或 `WrongNotebook-Android-Tablet-<版本>.apk` | App 私有目录，卸载时删除 |
-| 安卓手机 / 平板（客户端） | 安装 `WrongNotebook-Android-Client-Phone-<版本>.apk` 或 `-Client-Tablet-<版本>.apk`，首次打开填写服务器地址 | 不保存数据，连接已部署的服务器 |
+| 安卓手机 / 平板 / 墨水屏（单机版） | 安装 `WrongNotebook-Android-Phone-<版本>.apk`、`WrongNotebook-Android-Tablet-<版本>.apk` 或 `WrongNotebook-Android-Eink-<版本>.apk` | App 私有目录，卸载时删除 |
+| 安卓手机 / 平板 / 墨水屏（客户端） | 安装 `WrongNotebook-Android-Client-Phone-<版本>.apk`、`-Client-Tablet-<版本>.apk` 或 `-Client-Eink-<版本>.apk`，首次打开填写服务器地址 | 不保存数据，连接已部署的服务器 |
 
 Windows 安装包当前仍未签名；项目已通过 SignPath Foundation 审核，正在用测试证书接入，取得生产证书后启用签名。签名范围、职责和状态见 [Code signing policy](https://github.com/margrop/wrong-notebook/blob/main/doc/CODE_SIGNING.md)，数据处理见[隐私说明](https://github.com/margrop/wrong-notebook/blob/main/doc/PRIVACY.md)。维护者可按 [Windows 签名配置](https://github.com/margrop/wrong-notebook/blob/main/doc/WINDOWS_SIGNING.md)启用签名。
 
@@ -250,4 +250,4 @@ xattr -cr /Applications/WrongNotebook.app
 codesign --force --deep --sign - /Applications/WrongNotebook.app
 ```
 
-安卓单机版在手机上运行服务端，无需另行部署，需要 Android 8.0 及以上的 64 位 ARM 设备；两个安卓版本都需要 Android System WebView 111 及以上；安卓客户端版只是连接服务器的外壳，需要先用上面任一方式部署服务端。详细说明见 [INSTALL_PACKAGES.md](https://github.com/margrop/wrong-notebook/blob/main/doc/INSTALL_PACKAGES.md)。
+安卓单机版在手机上运行服务端，无需另行部署，需要 Android 8.0 及以上的 64 位 ARM 设备；两个安卓版本都需要 Android System WebView 111 及以上；安卓客户端版只是连接服务器的外壳，需要先用上面任一方式部署服务端。墨水屏版（`Eink`）固定横向、关闭全部动画并强制浅色，没有摄像头时自动隐藏拍照入口；墨案 inkPad X 等 32 位墨水屏设备请使用客户端版（单机版的 Node.js 与 Prisma 引擎只提供 arm64-v8a）。详细说明见 [INSTALL_PACKAGES.md](https://github.com/margrop/wrong-notebook/blob/main/doc/INSTALL_PACKAGES.md)。

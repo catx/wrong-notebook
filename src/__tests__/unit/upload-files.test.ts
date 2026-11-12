@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+    bridgeCameraAvailability,
     clipboardImageToFile,
     extractImageFromPasteEvent,
     isClipboardReadSupported,
     isScreenshotSupported,
 } from "@/lib/hooks/use-upload-files";
+import type { AndroidAppBridge } from "@/lib/android-app";
 
 describe("use-upload-files 纯函数", () => {
     describe("clipboardImageToFile", () => {
@@ -138,5 +140,31 @@ describe("use-upload-files 纯函数", () => {
                 delete navigator.mediaDevices;
             }
         });
+    });
+});
+
+describe("bridgeCameraAvailability", () => {
+    const bridge = (hasCamera?: () => boolean): AndroidAppBridge => ({
+        changeServer: vi.fn(),
+        getServerUrl: () => "http://127.0.0.1",
+        getDeviceType: () => "eink",
+        ...(hasCamera ? { hasCamera } : {}),
+    });
+
+    it("普通浏览器没有原生接口时无法判断", () => {
+        expect(bridgeCameraAvailability(null)).toBeNull();
+    });
+
+    it("早期 App 没有 hasCamera 时保持不确定，不误藏拍照入口", () => {
+        expect(bridgeCameraAvailability(bridge())).toBeNull();
+    });
+
+    it("按原生结果判断是否有摄像头", () => {
+        expect(bridgeCameraAvailability(bridge(() => false))).toBe(false);
+        expect(bridgeCameraAvailability(bridge(() => true))).toBe(true);
+    });
+
+    it("原生接口抛错时按不确定处理", () => {
+        expect(bridgeCameraAvailability(bridge(() => { throw new Error("bridge failed"); }))).toBeNull();
     });
 });

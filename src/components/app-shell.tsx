@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { APP_BRAND, NAV_ITEMS, isBarePath } from "@/lib/app-navigation";
+import { useEinkDevice } from "@/lib/hooks/use-eink";
 import { useEulaGate } from "@/lib/hooks/use-eula-gate";
 import { usePageTelemetry } from "@/lib/hooks/use-page-telemetry";
 import { useSetupRedirect } from "@/lib/hooks/use-setup-redirect";
@@ -24,6 +25,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const { t } = useLanguage();
     const { data: session, status } = useSession();
     const isAdmin = session?.user?.role === "admin";
+    // 墨水屏固定浅色，不显示主题切换
+    const eink = useEinkDevice();
     const isBare = isBarePath(pathname);
     useSetupRedirect(isAdmin && !isBare);
     usePageTelemetry(pathname, status === "authenticated");
@@ -90,7 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             </Link>
                         )}
                         <ImportTasksIndicator className="mr-1" />
-                        <ThemeToggle />
+                        {!eink && <ThemeToggle />}
                         <SettingsDialog />
                         <Button
                             variant="ghost"

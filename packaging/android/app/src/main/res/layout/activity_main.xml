@@ -34,6 +34,7 @@
         android:visibility="gone">
 
         <ProgressBar
+            android:id="@+id/starting_progress"
             style="@android:style/Widget.Material.ProgressBar"
             android:layout_width="48dp"
             android:layout_height="48dp"

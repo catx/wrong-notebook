@@ -517,18 +517,19 @@ async function buildQnap() {
 }
 
 /**
- * 安卓 APK 有两种模式，各分手机版（竖屏）和平板版（横竖屏）：
+ * 安卓 APK 有两种模式，各分手机版（竖屏）、平板版（横竖屏）和墨水屏版（横向、无动画）：
  *   - standalone 单机版：内置 Node.js、Prisma 引擎和 dist/bundle，在手机上运行完整服务端，数据保存在本机
  *   - client 客户端版：只是连接已部署服务器的 WebView 外壳
+ * 墨水屏版沿用同一套代码，网页按 UA 中的 (eink) 关闭动画并强制浅色，无摄像头时隐藏拍照入口。
  * 单机版的 Prisma 引擎目录取 ANDROID_PRISMA_ENGINES_DIR，默认 dist/android-prisma-engines
  * （由 build-android-prisma-engines.sh 生成）；patchelf 可用 PATCHELF 指定路径。
  * 签名密钥通过环境变量 ANDROID_KEYSTORE_FILE 等传入（见 packaging/android/app/build.gradle），未提供时使用调试签名。
  */
 async function buildAndroid() {
     const modes = flags.mode ? [flags.mode] : ['standalone', 'client'];
-    const flavors = flags.flavor ? [flags.flavor] : ['phone', 'tablet'];
+    const flavors = flags.flavor ? [flags.flavor] : ['phone', 'tablet', 'eink'];
     if (modes.some((mode) => !['standalone', 'client'].includes(mode))) throw new Error('--mode 只能是 standalone 或 client');
-    if (flavors.some((flavor) => !['phone', 'tablet'].includes(flavor))) throw new Error('--flavor 只能是 phone 或 tablet');
+    if (flavors.some((flavor) => !['phone', 'tablet', 'eink'].includes(flavor))) throw new Error('--flavor 只能是 phone、tablet 或 eink');
     if (!process.env.ANDROID_HOME && !process.env.ANDROID_SDK_ROOT) {
         throw new Error('未设置 ANDROID_HOME，请安装 Android SDK（compileSdk 35）');
     }
