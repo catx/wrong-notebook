@@ -137,6 +137,16 @@ docker-compose -f docker-compose.https.yml up -d
 
 > 注意：Let's Encrypt 证书需要定期续期，可配置 cron 任务自动更新。
 
+### 无域名时的自动签发与续期
+
+没有域名时，可用公网 IP 派生的 `1-2-3-4.sslip.io` 名字申请受浏览器信任的证书。仓库内的 `scripts/https-setup.sh` 把签发、续期和"证书更新后重启容器"串成一条命令：
+
+```bash
+sudo bash scripts/https-setup.sh --email you@example.com
+```
+
+它会在签发期间临时让出 80 端口，并把每日续期任务写入 `/etc/cron.d/wrong-notebook-cert`。完整步骤（采购、Docker、Compose、备份、验收、排错）见 [腾讯云轻量（首尔）部署清单](TENCENT_LIGHTHOUSE_DEPLOY.md)。
+
 ---
 
 ## 常见问题
